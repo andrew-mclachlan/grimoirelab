@@ -11,6 +11,7 @@ export class AwsVpcStack extends cdk.Stack {
   public readonly tokenSecrets: secretsmanager.ISecret;
   public readonly rdsSecrets: secretsmanager.ISecret;
   public readonly appLogGroup: logs.ILogGroup;
+  public readonly securityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -85,6 +86,24 @@ export class AwsVpcStack extends cdk.Stack {
       vpc: this.vpc,
       useForServiceConnect: true,
     });
+
+    //
+    // Service Connect Security Groups
+    this.securityGroup = new ec2.SecurityGroup(
+      this,
+      "sortinghat-security-group",
+      {
+        securityGroupName: "grimoire-sortinghat-security-group",
+        vpc: this.vpc,
+      }
+    );
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(9314));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(3306));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(6379));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(8000));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(5601));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(9200));
+    this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.tcp(9600));
   }
 
   // resourceName is a common method for AWS resource naming
