@@ -4,13 +4,14 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as targets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 
 interface AwsNlbStackProps extends cdk.StackProps {
   readonly vpc: ec2.Vpc;
   readonly cluster: ecs.Cluster;
   readonly appLogGroup: logs.ILogGroup;
-  readonly openSearchDashboard: ecs.FargateService;
+  readonly theTaskDefinition: ecs.FargateService;
+  readonly theTaskDefinitionContainerName: string;
+  readonly theTaskDefinitionPort: number;
 }
 
 export class AwsNlbStack extends cdk.Stack {
@@ -33,27 +34,34 @@ export class AwsNlbStack extends cdk.Stack {
       loadBalancerName: this.resourceName("nlb"),
       vpc: props.vpc,
       securityGroups: [nlbSecurityGroup],
-      internetFacing: false,
+      internetFacing: false, // An internal Load Balancer accessible via EC2 instance
     });
 
-    nlb.connections.allowFrom(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5601));
+    nlb.connections.allowFrom(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80));
 
     //
     // Add a listener on a particular port for the NLB
     const listener = nlb.addListener(this.resourceName("nlb-listener"), {
-      port: 5601,
+      port: props.theTaskDefinitionPort,
     });
 
     listener.addTargets(this.resourceName("nlb-tg"), {
       targetGroupName: this.resourceName("nlb-tg"),
-      port: 5601,
+      port: props.theTaskDefinitionPort,
       targets: [
-        props.openSearchDashboard.loadBalancerTarget({
-          containerName: this.resourceName("opensearch-dashboards"),
-          containerPort: 5601,
+        props.theTaskDefinition.loadBalancerTarget({
+          containerName: this.resourceName(
+            props.theTaskDefinitionContainerName
+          ),
+          containerPort: props.theTaskDefinitionPort,
         }),
       ],
       deregistrationDelay: cdk.Duration.seconds(300),
+      healthCheck: {
+        interval: cdk.Duration.seconds(60),
+        path: "/",
+        timeout: cdk.Duration.seconds(5),
+      },
     });
   }
 

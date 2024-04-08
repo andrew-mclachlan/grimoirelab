@@ -8,6 +8,7 @@ import { AwsEcsOpenSearchStack } from "../lib/aws-ecs-opensearch-stack";
 import { AwsEcsMordredStack } from "../lib/aws-ecs-mordred-stack";
 import { AwsEcsSortingHatStack } from "../lib/aws-ecs-sortinghat-stack";
 import { AwsNlbStack } from "../lib/aws-nlb-stack";
+import { AwsEcsTestStack } from "../lib/aws-ecs-test-stack";
 
 const app = new cdk.App();
 
@@ -41,20 +42,16 @@ new AwsEcsRedisStack(app, "AwsEcsRedisStack", {
 
 //
 // ECS Stack with a cluser and tasks for opensearch
-const openSearchStack = new AwsEcsOpenSearchStack(
-  app,
-  "AwsEcsOpenSearchStack",
-  {
-    env: {
-      account: `${GRIMOIRE_AWS_ACCOUNT}`,
-      region: `${GRIMOIRE_AWS_REGION}`,
-    },
-    vpc: vpcStack.vpc,
-    cluster: vpcStack.cluster,
-    appLogGroup: vpcStack.appLogGroup,
-    securityGroup: vpcStack.securityGroup,
-  }
-);
+new AwsEcsOpenSearchStack(app, "AwsEcsOpenSearchStack", {
+  env: {
+    account: `${GRIMOIRE_AWS_ACCOUNT}`,
+    region: `${GRIMOIRE_AWS_REGION}`,
+  },
+  vpc: vpcStack.vpc,
+  cluster: vpcStack.cluster,
+  appLogGroup: vpcStack.appLogGroup,
+  securityGroup: vpcStack.securityGroup,
+});
 
 //
 // ECS Stack with a cluser and tasks for sortinghat
@@ -77,11 +74,25 @@ new AwsEcsMordredStack(app, "AwsEcsMordredStack", {
 });
 
 //
+// ECS Stack with a cluser and tasks for mordred
+const openSearchStack = new AwsEcsTestStack(app, "AwsEcsTestStack", {
+  env: { account: `${GRIMOIRE_AWS_ACCOUNT}`, region: `${GRIMOIRE_AWS_REGION}` },
+  vpc: vpcStack.vpc,
+  cluster: vpcStack.cluster,
+  appLogGroup: vpcStack.appLogGroup,
+  securityGroup: vpcStack.securityGroup,
+});
+
+//
 // NLB Stack separated out of main stack to avoid unnecessary deletion
 new AwsNlbStack(app, "AwsNlbStack", {
   env: { account: `${GRIMOIRE_AWS_ACCOUNT}`, region: `${GRIMOIRE_AWS_REGION}` },
   vpc: vpcStack.vpc,
   cluster: vpcStack.cluster,
   appLogGroup: vpcStack.appLogGroup,
-  openSearchDashboard: openSearchStack.ecsService4,
+  //
+  // Test Network Load Balancer
+  theTaskDefinition: openSearchStack.ecsService6,
+  theTaskDefinitionContainerName: "test",
+  theTaskDefinitionPort: 80,
 });
