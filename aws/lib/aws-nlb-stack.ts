@@ -34,10 +34,12 @@ export class AwsNlbStack extends cdk.Stack {
       loadBalancerName: this.resourceName("nlb"),
       vpc: props.vpc,
       securityGroups: [nlbSecurityGroup],
-      internetFacing: false, // An internal Load Balancer accessible via EC2 instance
+      internetFacing: true, // Load Balancer available externally
     });
 
-    nlb.connections.allowFrom(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80));
+    //
+    // Allow from everywhere!!
+    nlb.connections.allowFrom(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(5601));
 
     //
     // Add a listener on a particular port for the NLB
@@ -58,8 +60,8 @@ export class AwsNlbStack extends cdk.Stack {
       ],
       deregistrationDelay: cdk.Duration.seconds(300),
       healthCheck: {
+        protocol: elbv2.Protocol.TCP,
         interval: cdk.Duration.seconds(60),
-        path: "/",
         timeout: cdk.Duration.seconds(5),
       },
     });

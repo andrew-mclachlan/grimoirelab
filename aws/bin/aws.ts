@@ -42,16 +42,20 @@ new AwsEcsRedisStack(app, "AwsEcsRedisStack", {
 
 //
 // ECS Stack with a cluser and tasks for opensearch
-new AwsEcsOpenSearchStack(app, "AwsEcsOpenSearchStack", {
-  env: {
-    account: `${GRIMOIRE_AWS_ACCOUNT}`,
-    region: `${GRIMOIRE_AWS_REGION}`,
-  },
-  vpc: vpcStack.vpc,
-  cluster: vpcStack.cluster,
-  appLogGroup: vpcStack.appLogGroup,
-  securityGroup: vpcStack.securityGroup,
-});
+const openSearchStack = new AwsEcsOpenSearchStack(
+  app,
+  "AwsEcsOpenSearchStack",
+  {
+    env: {
+      account: `${GRIMOIRE_AWS_ACCOUNT}`,
+      region: `${GRIMOIRE_AWS_REGION}`,
+    },
+    vpc: vpcStack.vpc,
+    cluster: vpcStack.cluster,
+    appLogGroup: vpcStack.appLogGroup,
+    securityGroup: vpcStack.securityGroup,
+  }
+);
 
 //
 // ECS Stack with a cluser and tasks for sortinghat
@@ -75,7 +79,7 @@ new AwsEcsMordredStack(app, "AwsEcsMordredStack", {
 
 //
 // ECS Stack with a cluser and tasks for mordred
-const openSearchStack = new AwsEcsTestStack(app, "AwsEcsTestStack", {
+new AwsEcsTestStack(app, "AwsEcsTestStack", {
   env: { account: `${GRIMOIRE_AWS_ACCOUNT}`, region: `${GRIMOIRE_AWS_REGION}` },
   vpc: vpcStack.vpc,
   cluster: vpcStack.cluster,
@@ -92,7 +96,7 @@ new AwsNlbStack(app, "AwsNlbStack", {
   appLogGroup: vpcStack.appLogGroup,
   //
   // Test Network Load Balancer
-  theTaskDefinition: openSearchStack.ecsService6,
-  theTaskDefinitionContainerName: "test",
-  theTaskDefinitionPort: 80,
+  theTaskDefinition: openSearchStack.ecsService4,
+  theTaskDefinitionContainerName: "opensearch-dashboards",
+  theTaskDefinitionPort: 5601,
 });
